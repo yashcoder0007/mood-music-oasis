@@ -24,7 +24,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       
-      if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_IN') {
+        navigate('/');
+      } else if (event === 'SIGNED_OUT') {
         navigate('/auth');
       }
     });
@@ -40,11 +42,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    navigate('/');
   };
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { error } = await supabase.auth.signUp({ 
+      email, 
+      password,
+      options: {
+        emailRedirectTo: window.location.origin, // Ensure redirect works in production
+        data: {
+          // Can add custom user metadata here if needed
+        }
+      }
+    });
     if (error) throw error;
   };
 

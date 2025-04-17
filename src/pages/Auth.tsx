@@ -21,18 +21,34 @@ const Auth = () => {
     try {
       if (isLogin) {
         await signIn(email, password);
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
+        });
       } else {
         await signUp(email, password);
+        // Auto-login after registration since email verification is disabled
+        await signIn(email, password);
         toast({
           title: "Account created successfully!",
-          description: "You can now log in to your account.",
+          description: "You have been automatically logged in.",
         });
-        setIsLogin(true);
       }
     } catch (error: any) {
+      let errorMessage = error.message;
+      
+      // Handle common error messages with more user-friendly descriptions
+      if (errorMessage.includes("Email not confirmed")) {
+        errorMessage = "Please check your email to confirm your account before logging in.";
+      } else if (errorMessage.includes("Invalid login credentials")) {
+        errorMessage = "The email or password you entered is incorrect.";
+      } else if (errorMessage.includes("User already registered")) {
+        errorMessage = "This email is already registered. Please log in instead.";
+      }
+      
       toast({
-        title: "Error",
-        description: error.message,
+        title: "Authentication Error",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
