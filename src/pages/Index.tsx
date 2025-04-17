@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Heart, Send, Quote, Music, Share, ThumbsUp, ArrowRight, Calendar, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import MusicPlayer from "@/components/MusicPlayer";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -15,7 +15,6 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Simulate a response after submission
   const handleSubmitFeeling = () => {
     if (!feeling.trim()) return;
     
@@ -52,11 +51,12 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F7F7FD]">
+    <div className="min-h-screen flex flex-col bg-[#F7F7FD] dark:bg-gray-900">
       {/* Header Navigation */}
-      <header className="bg-white py-4 px-6 border-b flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-purple-600">MoodCraft</h1>
+      <header className="bg-white dark:bg-gray-800 py-4 px-6 border-b flex justify-between items-center">
+        <h1 className="text-2xl font-bold text-purple-600 dark:text-purple-400">MoodCraft</h1>
         <nav className="flex items-center space-x-8">
+          <ThemeToggle />
           <a href="/" className="flex items-center text-gray-700 hover:text-purple-600">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />

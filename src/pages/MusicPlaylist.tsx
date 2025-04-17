@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
@@ -8,14 +7,13 @@ import { Slider } from "@/components/ui/slider";
 import { Howl } from "howler";
 import MusicPlayer from "@/components/MusicPlayer";
 
-// Define our playlists - in a real app these would come from an API
 const playlists = {
   "gentle-piano": {
     name: "Gentle Piano",
     description: "Soothing piano melodies to calm your mind and relax your body.",
     tracks: [
-      { name: "Peaceful Morning", length: "3:45", src: "https://cdn.freesound.org/previews/651/651713_5674468-lq.mp3" },
-      { name: "Rainy Day Reflections", length: "4:20", src: "https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3" },
+      { name: "Peaceful Morning", length: "3:45", src: "https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3" },
+      { name: "Rainy Day Reflections", length: "4:20", src: "https://cdn.freesound.org/previews/651/651713_5674468-lq.mp3" },
       { name: "Moonlight Sonata", length: "5:10", src: "https://cdn.freesound.org/previews/368/368332_1676145-lq.mp3" },
     ],
     color: "bg-blue-50",
@@ -65,24 +63,20 @@ const MusicPlaylist = () => {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  // Get the current playlist
   const playlist = slug && playlists[slug as keyof typeof playlists] 
     ? playlists[slug as keyof typeof playlists] 
     : null;
 
   const currentTrack = playlist?.tracks[currentTrackIndex];
 
-  // Initialize the sound
   useEffect(() => {
     if (!currentTrack?.src) return;
     
-    // If there's a current sound playing, stop it
     if (sound) {
       sound.stop();
       sound.unload();
     }
     
-    // Create new sound
     const newSound = new Howl({
       src: [currentTrack.src],
       html5: true,
@@ -96,7 +90,6 @@ const MusicPlaylist = () => {
     
     setSound(newSound);
     
-    // Cleanup
     return () => {
       if (newSound) {
         newSound.stop();
@@ -105,7 +98,6 @@ const MusicPlaylist = () => {
     };
   }, [currentTrackIndex, slug]);
 
-  // Update progress
   useEffect(() => {
     if (!sound || !isPlaying) return;
     
@@ -118,7 +110,6 @@ const MusicPlaylist = () => {
     return () => clearInterval(progressInterval);
   }, [sound, isPlaying]);
 
-  // Play/Pause toggle
   const togglePlayPause = () => {
     if (!sound) return;
     
@@ -129,27 +120,22 @@ const MusicPlaylist = () => {
     }
   };
 
-  // Previous track
   const handlePrevious = () => {
     if (currentTrackIndex > 0) {
       setCurrentTrackIndex(currentTrackIndex - 1);
     } else {
-      // Wrap to end
       setCurrentTrackIndex(playlist?.tracks.length ? playlist.tracks.length - 1 : 0);
     }
   };
 
-  // Next track
   const handleNext = () => {
     if (playlist?.tracks && currentTrackIndex < playlist.tracks.length - 1) {
       setCurrentTrackIndex(currentTrackIndex + 1);
     } else {
-      // Wrap to beginning
       setCurrentTrackIndex(0);
     }
   };
 
-  // Handle seek
   const handleSeek = (value: number[]) => {
     if (!sound) return;
     
@@ -158,7 +144,6 @@ const MusicPlaylist = () => {
     setProgress(seekValue);
   };
 
-  // Format time
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -183,7 +168,6 @@ const MusicPlaylist = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F7F7FD]">
-      {/* Header Navigation */}
       <header className="bg-white py-4 px-6 border-b flex justify-between items-center">
         <h1 className="text-2xl font-bold text-purple-600">MoodCraft</h1>
         <nav className="flex items-center space-x-8">
@@ -208,9 +192,7 @@ const MusicPlaylist = () => {
         </nav>
       </header>
 
-      {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
-        {/* Back button */}
         <Button 
           onClick={() => navigate('/')} 
           variant="outline" 
@@ -220,14 +202,12 @@ const MusicPlaylist = () => {
           Back to Home
         </Button>
         
-        {/* Playlist Header */}
         <div className={`${playlist.color} ${playlist.textColor} p-8 rounded-xl mb-8`}>
           <h1 className="text-3xl font-bold mb-2">{playlist.name}</h1>
           <p className="mb-4">{playlist.description}</p>
           <p className="text-sm">{playlist.tracks.length} tracks</p>
         </div>
         
-        {/* Tracks list */}
         <div className="bg-white rounded-xl p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4">Tracks</h2>
           
@@ -266,7 +246,6 @@ const MusicPlaylist = () => {
           </div>
         </div>
         
-        {/* Player Controls */}
         <Card className="p-6 sticky bottom-4 bg-white rounded-xl shadow-lg">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div className="flex items-center mb-4 md:mb-0">
@@ -334,12 +313,11 @@ const MusicPlaylist = () => {
         </Card>
       </main>
 
-      {/* Footer */}
       <footer className="text-center py-6 text-gray-500 border-t">
         MoodCraft - Your personal AI wellness guide
       </footer>
       
-      {/* We don't include the background music player on this page since we're playing music */}
+      <MusicPlayer />
     </div>
   );
 };

@@ -1,58 +1,84 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Howl } from "howler";
 import { Volume2, VolumeX, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
+import { useToast } from "@/components/ui/use-toast";
+
+const songs = {
+  calm: [
+    { 
+      name: "Gentle Ocean",
+      url: "https://cdn.freesound.org/previews/417/417850_5121236-lq.mp3" 
+    },
+    { 
+      name: "Peaceful Piano",
+      url: "https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3" 
+    }
+  ],
+  focus: [
+    { 
+      name: "Study Beats",
+      url: "https://cdn.freesound.org/previews/635/635586_14159485-lq.mp3" 
+    },
+    { 
+      name: "Deep Focus",
+      url: "https://cdn.freesound.org/previews/612/612117_5674468-lq.mp3" 
+    }
+  ],
+  happy: [
+    { 
+      name: "Upbeat Acoustic",
+      url: "https://cdn.freesound.org/previews/583/583545_7616568-lq.mp3" 
+    }
+  ]
+};
 
 const MusicPlayer = () => {
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(0.3);
   const [muted, setMuted] = useState(false);
   const soundRef = useRef<Howl | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Create the lofi music player with a gentler song
+    // Create music player with first calm song by default
+    const defaultSong = songs.calm[0];
     soundRef.current = new Howl({
-      src: ["https://dl.dropboxusercontent.com/s/x2q43ayw85ygenn/gentle-ocean-waves.mp3"], // Gentle ocean waves with soft piano
+      src: [defaultSong.url],
       html5: true,
       loop: true,
       volume: volume,
       onload: () => {
         console.log("Music loaded successfully");
+        toast({
+          title: "Music Ready",
+          description: `Now playing: ${defaultSong.name}`,
+        });
       },
       onloaderror: (id, error) => {
         console.error("Error loading music:", error);
-        // Fallback to another gentle lofi song
-        soundRef.current = new Howl({
-          src: ["https://cdn.freesound.org/previews/597/597849_11861866-lq.mp3"],
-          html5: true,
-          loop: true,
-          volume: volume
+        toast({
+          title: "Music Error",
+          description: "Could not load music. Trying alternative source...",
+          variant: "destructive",
         });
+        // Try next song in calm category as fallback
+        if (songs.calm.length > 1) {
+          soundRef.current = new Howl({
+            src: [songs.calm[1].url],
+            html5: true,
+            loop: true,
+            volume: volume
+          });
+        }
       }
     });
-
-    // Auto-play with user interaction (to comply with browser autoplay policies)
-    const handleUserInteraction = () => {
-      if (soundRef.current && !playing) {
-        soundRef.current.play();
-        setPlaying(true);
-        // Remove the event listeners once played
-        document.removeEventListener("click", handleUserInteraction);
-        document.removeEventListener("keydown", handleUserInteraction);
-      }
-    };
-
-    document.addEventListener("click", handleUserInteraction);
-    document.addEventListener("keydown", handleUserInteraction);
 
     return () => {
       if (soundRef.current) {
         soundRef.current.stop();
       }
-      document.removeEventListener("click", handleUserInteraction);
-      document.removeEventListener("keydown", handleUserInteraction);
     };
   }, []);
 
@@ -91,7 +117,7 @@ const MusicPlayer = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-white p-2 rounded-full shadow-md">
+    <div className="fixed bottom-4 right-4 flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-full shadow-md">
       <Button 
         size="icon" 
         variant="ghost" 
