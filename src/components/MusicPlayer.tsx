@@ -12,9 +12,9 @@ const MusicPlayer = () => {
   const soundRef = useRef<Howl | null>(null);
 
   useEffect(() => {
-    // Create the lofi music player
+    // Create the lofi music player with a gentler song
     soundRef.current = new Howl({
-      src: ["/lofi-music.mp3"], // This is a placeholder path - we'll handle this below
+      src: ["https://dl.dropboxusercontent.com/s/x2q43ayw85ygenn/gentle-ocean-waves.mp3"], // Gentle ocean waves with soft piano
       html5: true,
       loop: true,
       volume: volume,
@@ -23,9 +23,9 @@ const MusicPlayer = () => {
       },
       onloaderror: (id, error) => {
         console.error("Error loading music:", error);
-        // Fallback to an embedded audio URL if local file fails
+        // Fallback to another gentle lofi song
         soundRef.current = new Howl({
-          src: ["https://cdn.freesound.org/previews/706/706333_11861866-lq.mp3"], // Fallback to a free lofi sound
+          src: ["https://cdn.freesound.org/previews/597/597849_11861866-lq.mp3"],
           html5: true,
           loop: true,
           volume: volume
