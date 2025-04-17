@@ -1,0 +1,3 @@
+
+<!-- MP3 files can't be directly created this way, we're using placeholder content -->
+<!-- The MusicPlayer component handles fallback to online audio URLs -->
