@@ -23,7 +23,19 @@ export function useMoodEntries() {
         const storedEntries = localStorage.getItem('moodEntries');
         
         if (storedEntries) {
-          setData(JSON.parse(storedEntries));
+          try {
+            const parsedEntries = JSON.parse(storedEntries);
+            // Validate that we have an array
+            if (Array.isArray(parsedEntries)) {
+              setData(parsedEntries);
+            } else {
+              console.warn("Stored mood entries is not an array, initializing with empty array");
+              setData([]);
+            }
+          } catch (parseError) {
+            console.error("Error parsing mood entries:", parseError);
+            setData([]);
+          }
         } else {
           // Initialize with empty array if no entries exist
           setData([]);
@@ -68,12 +80,42 @@ export function useMoodEntries() {
     };
     
     const updatedEntries = [newEntry, ...data];
-    localStorage.setItem('moodEntries', JSON.stringify(updatedEntries));
-    setData(updatedEntries);
     
-    // Dispatch custom event to notify other components
-    window.dispatchEvent(new Event('moodEntriesUpdate'));
+    try {
+      localStorage.setItem('moodEntries', JSON.stringify(updatedEntries));
+      setData(updatedEntries);
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new Event('moodEntriesUpdate'));
+      return true;
+    } catch (error) {
+      console.error("Failed to save mood entry:", error);
+      return false;
+    }
   };
 
-  return { data, isLoading, error, addMoodEntry };
+  // Function to get suggested music based on the latest mood
+  const getSuggestedMusic = () => {
+    if (data.length === 0) return "lofi";
+    
+    const latestMood = data[0].mood;
+    
+    if (["Happy", "Excited", "Joyful"].includes(latestMood)) {
+      return "happy";
+    } else if (["Sad", "Depressed", "Down"].includes(latestMood)) {
+      return "calm";
+    } else if (["Focused", "Productive", "Determined"].includes(latestMood)) {
+      return "focus";
+    }
+    
+    return "lofi";
+  };
+
+  return { 
+    data, 
+    isLoading, 
+    error, 
+    addMoodEntry,
+    getSuggestedMusic
+  };
 }

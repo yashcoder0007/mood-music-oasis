@@ -7,62 +7,62 @@ import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
 import { useMoodEntries } from "@/hooks/useMoodEntries";
 
-// More reliable audio sources (free audio from mixkit.co)
+// More reliable audio sources from Free Music Archive and other free sources
 const songs = {
   calm: [
     { 
-      name: "Dreamy Meditation",
-      url: "https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3" 
+      name: "Peaceful Meditation",
+      url: "https://cdn.freesound.org/previews/515/515363_2454582-lq.mp3" 
     },
     { 
       name: "Serenity",
-      url: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3" 
+      url: "https://cdn.freesound.org/previews/463/463449_4094606-lq.mp3" 
     },
     {
-      name: "Calm Morning",
-      url: "https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3"
+      name: "Tranquil Waters",
+      url: "https://cdn.freesound.org/previews/620/620602_1648170-lq.mp3"
     }
   ],
   focus: [
     { 
-      name: "Deep Focus",
-      url: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" 
+      name: "Concentration",
+      url: "https://cdn.freesound.org/previews/587/587636_5674468-lq.mp3" 
     },
     { 
-      name: "Concentration",
-      url: "https://assets.mixkit.co/music/preview/mixkit-morning-mood-614.mp3" 
+      name: "Deep Focus",
+      url: "https://cdn.freesound.org/previews/560/560636_1089955-lq.mp3" 
     },
     {
       name: "Study Mode",
-      url: "https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3"
+      url: "https://cdn.freesound.org/previews/518/518500_11019257-lq.mp3"
     }
   ],
   happy: [
     { 
       name: "Upbeat Mood",
-      url: "https://assets.mixkit.co/music/preview/mixkit-sun-and-his-daughter-580.mp3" 
+      url: "https://cdn.freesound.org/previews/475/475838_5407806-lq.mp3" 
     },
     {
       name: "Happy Day",
-      url: "https://assets.mixkit.co/music/preview/mixkit-feeling-happy-5.mp3"
+      url: "https://cdn.freesound.org/previews/415/415101_8199784-lq.mp3"
     },
     {
       name: "Joy",
-      url: "https://assets.mixkit.co/music/preview/mixkit-cherry-pop-99.mp3"
+      url: "https://cdn.freesound.org/previews/479/479035_10538900-lq.mp3"
     }
   ],
   lofi: [
     {
       name: "Lofi Chill",
-      url: "https://assets.mixkit.co/music/preview/mixkit-life-is-a-dream-837.mp3"
+      url: "https://cdn.freesound.org/previews/612/612095_5674468-lq.mp3"
     },
     {
       name: "Lofi Study",
-      url: "https://assets.mixkit.co/music/preview/mixkit-silent-descent-614.mp3"
+      url: "https://cdn.freesound.org/previews/635/635658_5674468-lq.mp3"
     },
     {
       name: "Lofi Relax",
-      url: "https://assets.mixkit.co/music/preview/mixkit-comforting-piano-beat-709.mp3"
+      url: "https://cdn.freesound.org/previews/588/588449_13279153-lq.mp3"
     }
   ]
 };
@@ -77,6 +77,8 @@ const MusicPlayer = () => {
   const soundRef = useRef<Howl | null>(null);
   const { toast } = useToast();
   const { data: moodEntries } = useMoodEntries();
+  const [loading, setLoading] = useState(false);
+  const [errorCount, setErrorCount] = useState(0);
 
   // Get the latest mood entry to suggest music
   useEffect(() => {
@@ -102,18 +104,20 @@ const MusicPlayer = () => {
     }
   }, [moodEntries, currentCategory, playing]);
 
-  // Auto-play music when component mounts
+  // Initialize music player when component mounts
   useEffect(() => {
-    const autoPlayTrack = songs.lofi[0];
-    loadAndPlaySong(autoPlayTrack.url, autoPlayTrack.name, false); // Start paused
+    const initializeTrack = songs.lofi[0];
+    loadAndPlaySong(initializeTrack.url, initializeTrack.name, false);
     
     return () => {
       if (soundRef.current) {
         soundRef.current.stop();
+        soundRef.current.unload();
       }
     };
   }, []);
 
+  // Handle volume changes
   useEffect(() => {
     if (soundRef.current) {
       soundRef.current.volume(muted ? 0 : volume);
@@ -121,6 +125,8 @@ const MusicPlayer = () => {
   }, [volume, muted]);
 
   const loadAndPlaySong = (url: string, name: string, autoplay: boolean = true) => {
+    setLoading(true);
+    
     if (soundRef.current) {
       soundRef.current.stop();
       soundRef.current.unload();
@@ -128,52 +134,86 @@ const MusicPlayer = () => {
     
     setCurrentTrackName(name);
     
-    soundRef.current = new Howl({
-      src: [url],
-      html5: true,
-      loop: true,
-      volume: muted ? 0 : volume,
-      autoplay: autoplay,
-      onload: () => {
-        console.log("Music loaded successfully:", name);
-        if (autoplay) {
+    // Create a new Howl instance with the song
+    try {
+      soundRef.current = new Howl({
+        src: [url],
+        html5: true,
+        loop: true,
+        volume: muted ? 0 : volume,
+        autoplay: autoplay,
+        onload: () => {
+          console.log("Music loaded successfully:", name);
+          setLoading(false);
+          setErrorCount(0);
+          if (autoplay) {
+            toast({
+              title: "Now Playing",
+              description: name,
+            });
+            setPlaying(true);
+          }
+        },
+        onloaderror: () => {
+          console.error("Error loading music:", url);
+          setLoading(false);
+          setErrorCount(prev => prev + 1);
+          
+          // If we've had too many errors, show a toast notification
+          if (errorCount >= 2) {
+            toast({
+              title: "Music Error",
+              description: "Having trouble loading music. Please try again later.",
+              variant: "destructive",
+            });
+            setPlaying(false);
+            return;
+          }
+          
+          // Try another track if this one fails
           toast({
-            title: "Now Playing",
-            description: name,
+            title: "Switching Tracks",
+            description: "Could not load track. Trying another one...",
+            variant: "default",
           });
-          setPlaying(true);
-        }
-      },
-      onloaderror: (id, error) => {
-        console.error("Error loading music:", error);
-        toast({
-          title: "Music Error",
-          description: "Could not load track. Trying next one...",
-          variant: "destructive",
-        });
-        nextTrack();
-      },
-      onplay: () => {
-        setPlaying(true);
-      },
-      onpause: () => {
-        setPlaying(false);
-      },
-      onend: () => {
-        nextTrack();
-      }
-    });
+          nextTrack();
+        },
+        onplay: () => setPlaying(true),
+        onpause: () => setPlaying(false),
+        onend: () => nextTrack()
+      });
+    } catch (error) {
+      console.error("Error creating Howl instance:", error);
+      setLoading(false);
+      toast({
+        title: "Music Error",
+        description: "Could not initialize audio player.",
+        variant: "destructive",
+      });
+    }
   };
 
   const togglePlay = () => {
-    if (!soundRef.current) return;
+    if (!soundRef.current || loading) return;
     
-    if (playing) {
-      soundRef.current.pause();
-    } else {
-      soundRef.current.play();
+    try {
+      if (playing) {
+        soundRef.current.pause();
+      } else {
+        soundRef.current.play();
+      }
+    } catch (error) {
+      console.error("Error toggling play state:", error);
+      toast({
+        title: "Playback Error",
+        description: "Could not control playback. Trying to reload track...",
+        variant: "destructive",
+      });
+      
+      // Attempt to reload the current track
+      const track = songs[currentCategory as keyof typeof songs][currentTrackIndex];
+      loadAndPlaySong(track.url, track.name);
     }
-    setPlaying(!playing);
   };
 
   const toggleMute = () => {
@@ -181,40 +221,77 @@ const MusicPlayer = () => {
     
     const newMutedState = !muted;
     setMuted(newMutedState);
-    soundRef.current.volume(newMutedState ? 0 : volume);
+    
+    try {
+      soundRef.current.volume(newMutedState ? 0 : volume);
+    } catch (error) {
+      console.error("Error toggling mute state:", error);
+    }
   };
 
   const handleVolumeChange = (value: number[]) => {
     const newVolume = value[0];
     setVolume(newVolume);
+    
     if (soundRef.current && !muted) {
-      soundRef.current.volume(newVolume);
+      try {
+        soundRef.current.volume(newVolume);
+      } catch (error) {
+        console.error("Error changing volume:", error);
+      }
     }
   };
 
   const nextTrack = () => {
-    const category = songs[currentCategory as keyof typeof songs];
-    const nextIndex = (currentTrackIndex + 1) % category.length;
-    setCurrentTrackIndex(nextIndex);
-    const nextTrack = category[nextIndex];
-    loadAndPlaySong(nextTrack.url, nextTrack.name);
+    try {
+      const category = songs[currentCategory as keyof typeof songs];
+      const nextIndex = (currentTrackIndex + 1) % category.length;
+      setCurrentTrackIndex(nextIndex);
+      const nextTrack = category[nextIndex];
+      loadAndPlaySong(nextTrack.url, nextTrack.name);
+    } catch (error) {
+      console.error("Error loading next track:", error);
+      toast({
+        title: "Playback Error",
+        description: "Could not load next track.",
+        variant: "destructive",
+      });
+    }
   };
 
   const prevTrack = () => {
-    const category = songs[currentCategory as keyof typeof songs];
-    const prevIndex = (currentTrackIndex - 1 + category.length) % category.length;
-    setCurrentTrackIndex(prevIndex);
-    const prevTrack = category[prevIndex];
-    loadAndPlaySong(prevTrack.url, prevTrack.name);
+    try {
+      const category = songs[currentCategory as keyof typeof songs];
+      const prevIndex = (currentTrackIndex - 1 + category.length) % category.length;
+      setCurrentTrackIndex(prevIndex);
+      const prevTrack = category[prevIndex];
+      loadAndPlaySong(prevTrack.url, prevTrack.name);
+    } catch (error) {
+      console.error("Error loading previous track:", error);
+      toast({
+        title: "Playback Error",
+        description: "Could not load previous track.",
+        variant: "destructive",
+      });
+    }
   };
 
   const changeCategory = (category: string) => {
-    if (category === currentCategory) return;
+    if (category === currentCategory || loading) return;
     
-    setCurrentCategory(category as keyof typeof songs);
-    setCurrentTrackIndex(0);
-    const newTrack = songs[category as keyof typeof songs][0];
-    loadAndPlaySong(newTrack.url, newTrack.name);
+    try {
+      setCurrentCategory(category as keyof typeof songs);
+      setCurrentTrackIndex(0);
+      const newTrack = songs[category as keyof typeof songs][0];
+      loadAndPlaySong(newTrack.url, newTrack.name);
+    } catch (error) {
+      console.error("Error changing music category:", error);
+      toast({
+        title: "Category Error",
+        description: "Could not change music category.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -224,6 +301,7 @@ const MusicPlayer = () => {
           size="icon" 
           variant="ghost" 
           onClick={prevTrack}
+          disabled={loading}
           className="h-8 w-8 rounded-full"
         >
           <SkipBack size={16} />
@@ -233,15 +311,23 @@ const MusicPlayer = () => {
           size="icon" 
           variant="ghost" 
           onClick={togglePlay}
-          className="h-9 w-9 rounded-full bg-accent dark:bg-accent"
+          disabled={loading}
+          className="h-9 w-9 rounded-full bg-accent dark:bg-accent relative"
         >
-          {playing ? <Pause size={18} /> : <Play size={18} />}
+          {loading ? (
+            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          ) : playing ? (
+            <Pause size={18} />
+          ) : (
+            <Play size={18} />
+          )}
         </Button>
         
         <Button 
           size="icon" 
           variant="ghost" 
           onClick={nextTrack}
+          disabled={loading}
           className="h-8 w-8 rounded-full"
         >
           <SkipForward size={16} />
@@ -249,7 +335,7 @@ const MusicPlayer = () => {
       </div>
       
       <div className="hidden xl:block px-2 min-w-[100px] text-xs text-center font-medium text-foreground dark:text-foreground truncate">
-        {currentTrackName}
+        {loading ? "Loading..." : currentTrackName}
       </div>
       
       <div className="hidden sm:flex items-center gap-2">
@@ -257,6 +343,7 @@ const MusicPlayer = () => {
           size="icon" 
           variant="ghost" 
           onClick={toggleMute}
+          disabled={loading}
           className="h-8 w-8 rounded-full"
         >
           {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
@@ -269,6 +356,7 @@ const MusicPlayer = () => {
           step={0.01}
           value={[volume]}
           onValueChange={handleVolumeChange}
+          disabled={loading}
         />
       </div>
 
@@ -280,6 +368,7 @@ const MusicPlayer = () => {
             variant={currentCategory === category ? "default" : "outline"}
             className="text-xs h-7 px-2"
             onClick={() => changeCategory(category)}
+            disabled={loading}
           >
             {category.charAt(0).toUpperCase() + category.slice(1)}
           </Button>
