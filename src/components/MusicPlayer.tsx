@@ -1,65 +1,68 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Howl } from "howler";
 import { Volume2, VolumeX, Pause, Play, SkipForward, SkipBack } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
+import { useMoodEntries } from "@/hooks/useMoodEntries";
 
+// More reliable audio sources (free audio from mixkit.co)
 const songs = {
   calm: [
     { 
-      name: "Gentle Ocean",
-      url: "https://assets.mixkit.co/music/preview/mixkit-a-very-happy-christmas-897.mp3" 
+      name: "Dreamy Meditation",
+      url: "https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3" 
     },
     { 
-      name: "Peaceful Piano",
+      name: "Serenity",
       url: "https://assets.mixkit.co/music/preview/mixkit-serene-view-443.mp3" 
     },
     {
-      name: "Morning Mist",
+      name: "Calm Morning",
       url: "https://assets.mixkit.co/music/preview/mixkit-valley-sunset-127.mp3"
     }
   ],
   focus: [
     { 
-      name: "Study Beats",
+      name: "Deep Focus",
       url: "https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3" 
     },
     { 
-      name: "Deep Focus",
-      url: "https://assets.mixkit.co/music/preview/mixkit-dreaming-big-31.mp3" 
+      name: "Concentration",
+      url: "https://assets.mixkit.co/music/preview/mixkit-morning-mood-614.mp3" 
     },
     {
-      name: "Concentration",
-      url: "https://assets.mixkit.co/music/preview/mixkit-hip-hop-02-621.mp3"
+      name: "Study Mode",
+      url: "https://assets.mixkit.co/music/preview/mixkit-just-chill-16.mp3"
     }
   ],
   happy: [
     { 
-      name: "Upbeat Acoustic",
+      name: "Upbeat Mood",
       url: "https://assets.mixkit.co/music/preview/mixkit-sun-and-his-daughter-580.mp3" 
     },
     {
-      name: "Happy Vibes",
+      name: "Happy Day",
       url: "https://assets.mixkit.co/music/preview/mixkit-feeling-happy-5.mp3"
     },
     {
-      name: "Cheerful Tune",
+      name: "Joy",
       url: "https://assets.mixkit.co/music/preview/mixkit-cherry-pop-99.mp3"
     }
   ],
   lofi: [
     {
-      name: "Lofi Beat",
-      url: "https://assets.mixkit.co/music/preview/mixkit-hip-hop-03-622.mp3"
-    },
-    {
-      name: "Chill Vibes",
+      name: "Lofi Chill",
       url: "https://assets.mixkit.co/music/preview/mixkit-life-is-a-dream-837.mp3"
     },
     {
-      name: "Lofi Rain",
-      url: "https://assets.mixkit.co/music/preview/mixkit-deep-urban-623.mp3"
+      name: "Lofi Study",
+      url: "https://assets.mixkit.co/music/preview/mixkit-silent-descent-614.mp3"
+    },
+    {
+      name: "Lofi Relax",
+      url: "https://assets.mixkit.co/music/preview/mixkit-comforting-piano-beat-709.mp3"
     }
   ]
 };
@@ -73,10 +76,36 @@ const MusicPlayer = () => {
   const [currentTrackName, setCurrentTrackName] = useState("");
   const soundRef = useRef<Howl | null>(null);
   const { toast } = useToast();
+  const { data: moodEntries } = useMoodEntries();
 
+  // Get the latest mood entry to suggest music
   useEffect(() => {
-    const defaultSong = songs.lofi[0];
-    loadAndPlaySong(defaultSong.url, defaultSong.name);
+    if (moodEntries && moodEntries.length > 0) {
+      const latestMood = moodEntries[0].mood;
+      
+      // Map mood to music category
+      let suggestedCategory = "lofi"; // default
+      
+      if (["Happy", "Excited", "Joyful"].includes(latestMood)) {
+        suggestedCategory = "happy";
+      } else if (["Sad", "Depressed", "Down"].includes(latestMood)) {
+        suggestedCategory = "calm";
+      } else if (["Focused", "Productive", "Determined"].includes(latestMood)) {
+        suggestedCategory = "focus";
+      }
+      
+      // Only change if it's different to avoid restarting current music
+      if (suggestedCategory !== currentCategory && !playing) {
+        setCurrentCategory(suggestedCategory);
+        setCurrentTrackIndex(0);
+      }
+    }
+  }, [moodEntries, currentCategory, playing]);
+
+  // Auto-play music when component mounts
+  useEffect(() => {
+    const autoPlayTrack = songs.lofi[0];
+    loadAndPlaySong(autoPlayTrack.url, autoPlayTrack.name, false); // Start paused
     
     return () => {
       if (soundRef.current) {
@@ -91,7 +120,7 @@ const MusicPlayer = () => {
     }
   }, [volume, muted]);
 
-  const loadAndPlaySong = (url: string, name: string) => {
+  const loadAndPlaySong = (url: string, name: string, autoplay: boolean = true) => {
     if (soundRef.current) {
       soundRef.current.stop();
       soundRef.current.unload();
@@ -104,17 +133,19 @@ const MusicPlayer = () => {
       html5: true,
       loop: true,
       volume: muted ? 0 : volume,
-      autoplay: true,
+      autoplay: autoplay,
       onload: () => {
         console.log("Music loaded successfully:", name);
-        toast({
-          title: "Now Playing",
-          description: name,
-        });
-        setPlaying(true);
+        if (autoplay) {
+          toast({
+            title: "Now Playing",
+            description: name,
+          });
+          setPlaying(true);
+        }
       },
       onloaderror: (id, error) => {
-        console.error("Error loading music:", url, error);
+        console.error("Error loading music:", error);
         toast({
           title: "Music Error",
           description: "Could not load track. Trying next one...",

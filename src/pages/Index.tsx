@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
+import { useMoodEntries } from "@/hooks/useMoodEntries";
 
 interface MoodAnalysis {
   mood: string;
@@ -29,6 +30,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const { data: moodEntries } = useMoodEntries();
 
   const analyzeMood = (text: string): MoodAnalysis => {
     const happyWords = ['happy', 'joy', 'excited', 'great', 'wonderful', 'amazing', 'good'];
@@ -38,6 +40,7 @@ const Index = () => {
     const calmWords = ['calm', 'peaceful', 'relaxed', 'tranquil', 'serene', 'content'];
 
     const lowercaseText = text.toLowerCase();
+    const words = text.split(/\s+/).length;
     
     let happyCount = happyWords.filter(word => lowercaseText.includes(word)).length;
     let sadCount = sadWords.filter(word => lowercaseText.includes(word)).length;
@@ -52,8 +55,8 @@ const Index = () => {
       const questionCount = (text.match(/\?/g) || []).length;
       if (questionCount > 1) anxiousCount += 1;
       
-      if (totalWords > 50) anxiousCount += 1;
-      if (totalWords < 5) sadCount += 1;
+      if (words > 50) anxiousCount += 1;
+      if (words < 5) sadCount += 1;
     }
 
     const moodScores = {

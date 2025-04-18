@@ -45,11 +45,35 @@ export function useMoodEntries() {
       }
     };
 
+    // Custom event for cases where localStorage is updated in the same window
+    const handleCustomStorage = () => {
+      loadEntries();
+    };
+
     window.addEventListener('storage', handleStorage);
+    window.addEventListener('moodEntriesUpdate', handleCustomStorage);
+    
     return () => {
       window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('moodEntriesUpdate', handleCustomStorage);
     };
   }, []);
 
-  return { data, isLoading, error };
+  // Function to add a new mood entry
+  const addMoodEntry = (entry: Omit<MoodEntry, 'id' | 'created_at'>) => {
+    const newEntry = {
+      ...entry,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString(),
+    };
+    
+    const updatedEntries = [newEntry, ...data];
+    localStorage.setItem('moodEntries', JSON.stringify(updatedEntries));
+    setData(updatedEntries);
+    
+    // Dispatch custom event to notify other components
+    window.dispatchEvent(new Event('moodEntriesUpdate'));
+  };
+
+  return { data, isLoading, error, addMoodEntry };
 }
